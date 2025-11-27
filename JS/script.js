@@ -1,4 +1,4 @@
-// script.js — versão organizada com filtro de impressão/relatório
+// script.js — versão com modo B (escaneamento por botão), badge ao vivo e ações quando pulseira vermelha
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const nowISO = () => new Date().toISOString();
@@ -43,14 +43,6 @@ const marketingMessage = $('#marketingMessage');
 const marketingImage = $('#marketingImage');
 const btnExportJSON = $('#btnExportJSON');
 const btnLimparTudo = $('#btnLimparTudo');
-
-/* Impressão refs */
-const quickFilter = $('#quickFilter');
-const filterFrom = $('#filterFrom');
-const filterTo = $('#filterTo');
-const btnFiltrar = $('#btnFiltrar');
-const btnImprimirFiltro = $('#btnImprimirFiltro');
-const relatorioPreview = $('#relatorioPreview');
 
 /* Tabs */
 tabs.forEach(t => t.addEventListener('click', () => {
@@ -151,13 +143,12 @@ if (form) {
       mesa,
       temAlergia,
       qualAlergia,
-      altura,
-      saiSozinho,
+      altura,       // 'maior' / 'menor'
+      saiSozinho,   // 'sim' / 'nao'
       observacoes,
       entradas: [],
       saidas: [],
-      status: 'fora',
-      createdAt: nowISO()
+      status: 'fora' // 'dentro' or 'fora'
     };
     cadastros.unshift(novo);
     saveCadastros();
@@ -378,10 +369,13 @@ function registrarEntradaSaida(id, operatorNameOverride=null){
   } else {
     // tentativa de saída
     if (c.saiSozinho !== 'sim') {
+      // pulseira não libera saída automaticamente — mostrar painel de ações (ligar/whatsapp/sms/email)
       const opt = confirm(`${c.nome} NÃO está autorizado a sair sozinho. Deseja contatar o responsável agora?`);
       if (opt) {
         contactResponsibleOptions(c);
       }
+      // registra tentativa de saída (opcional: só registra após confirmação do responsável)
+      // aqui registramos a tentativa como saída bloqueada (não altera status para 'fora')
       c.saidas = c.saidas || [];
       c.saidas.push({ ts: nowISO(), operator, blocked: true });
       alert('Saída BLOQUEADA — contato acionado (se confirmado).');
@@ -399,6 +393,7 @@ function registrarEntradaSaida(id, operatorNameOverride=null){
 function contactResponsibleOptions(c) {
   const phone = c.telefone || '';
   const email = c.email || '';
+  // show prompt with choices
   const choice = prompt(`Contato para ${c.nome} — escolha:
 1 - Ligar
 2 - WhatsApp
@@ -613,137 +608,4 @@ if ('serviceWorker' in navigator) {
   cadastros = cadastros.map(c => ({ entradas: [], saidas: [], status: 'fora', ...c }));
   renderHistorico();
   renderMarketingList();
-  attachPrintFilterEvents();
 })();
-
-/* --------- Impressão / Relatórios --------- */
-
-function toDateOnly(iso){
-  if(!iso) return null;
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return null;
-  return d.toISOString().slice(0,10); // yyyy-mm-dd
-}
-
-function agruparPorDia(list){
-  const map = {};
-  list.forEach(c => {
-    const dia = toDateOnly(c.createdAt) || toDateOnly(c.entradas && c.entradas[0] && c.entradas[0].ts) || 'unknown';
-    map[dia] = map[dia] || [];
-    map[dia].push(c);
-  });
-  return map;
-}
-
-function filtrarPorPeriodo(from, to){
-  // from,to are yyyy-mm-dd strings inclusive
-  const start = from ? new Date(from + "T00:00:00") : null;
-  const end = to ? new Date(to + "T23:59:59") : null;
-  return cadastros.filter(c => {
-    const d = new Date(c.createdAt);
-    if (isNaN(d.getTime())) return false;
-    if (start && d < start) return false;
-    if (end && d > end) return false;
-    return true;
-  });
-}
-
-function formatDateBr(iso){
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString();
-}
-
-function buildReportHTML(list, periodLabel){
-  const total = list.length;
-  // group counts by day
-  const byDay = {};
-  list.forEach(c => {
-    const day = toDateOnly(c.createdAt) || 'unknown';
-    byDay[day] = (byDay[day] || 0) + 1;
-  });
-  let perDayHtml = '';
-  Object.keys(byDay).sort().forEach(day => {
-    perDayHtml += `<div><strong>${day}</strong> — ${byDay[day]} crianças</div>`;
-  });
-
-  let html = `<div id="relatorioPrint" class="report-wrapper">
-    <img class="report-watermark" src="assets/img/logo-terra-do-sol.png" alt="marca" />
-    <div class="report-header">
-      <img src="assets/img/logo-terra-do-sol.png" alt="logo" />
-      <div>
-        <div class="report-title">Relatório – Terra do Sol – Parquinho Infantil</div>
-        <div class="report-meta">Período selecionado: ${periodLabel}</div>
-        <div class="report-meta">Crianças registradas: <strong>${total}</strong></div>
-      </div>
-    </div>
-
-    <div style="margin-top:12px">${perDayHtml}</div>
-
-    <table class="report-table" style="margin-top:12px">
-      <thead><tr><th>Nome</th><th>Idade</th><th>Setor</th><th>Pulseira</th></tr></thead>
-      <tbody>`;
-
-  list.forEach(c => {
-    const pulseira = (c.saiSozinho === 'sim') ? 'VERDE' : (c.altura === 'maior' ? 'AMARELA' : 'VERMELHA');
-    html += `<tr>
-      <td>${escapeHtml(c.nome)}</td>
-      <td>${escapeHtml(c.idade)}</td>
-      <td>${escapeHtml(c.setor||'-')}</td>
-      <td>${pulseira}</td>
-    </tr>`;
-  });
-
-  html += `</tbody></table></div>`;
-  return html;
-}
-
-function attachPrintFilterEvents(){
-  if (!quickFilter) return;
-  quickFilter.addEventListener('change', () => {
-    const v = quickFilter.value;
-    const today = new Date();
-    if (v === 'hoje') {
-      const d = today.toISOString().slice(0,10);
-      filterFrom.value = d; filterTo.value = d;
-    } else if (v === 'ontem') {
-      const t = new Date(today); t.setDate(today.getDate()-1);
-      const d = t.toISOString().slice(0,10);
-      filterFrom.value = d; filterTo.value = d;
-    } else if (v === 'ult7') {
-      const t = new Date(today); t.setDate(today.getDate()-6);
-      filterFrom.value = t.toISOString().slice(0,10); filterTo.value = today.toISOString().slice(0,10);
-    } else if (v === 'mesAtual') {
-      const start = new Date(today.getFullYear(), today.getMonth(), 1);
-      filterFrom.value = start.toISOString().slice(0,10); filterTo.value = today.toISOString().slice(0,10);
-    } else if (v === 'intervalo') {
-      filterFrom.value = ''; filterTo.value = '';
-    }
-  });
-
-  btnFiltrar.addEventListener('click', () => {
-    const from = filterFrom.value;
-    const to = filterTo.value || from;
-    if (!from) return alert('Escolha a data inicial.');
-    const list = filtrarPorPeriodo(from, to);
-    const periodLabel = (from === to) ? formatDateBr(from) : `${formatDateBr(from)} → ${formatDateBr(to)}`;
-    relatorioPreview.innerHTML = buildReportHTML(list, periodLabel);
-  });
-
-  btnImprimirFiltro.addEventListener('click', () => {
-    const from = filterFrom.value;
-    const to = filterTo.value || from;
-    if (!from) return alert('Escolha a data inicial para imprimir.');
-    const list = filtrarPorPeriodo(from, to);
-    const periodLabel = (from === to) ? formatDateBr(from) : `${formatDateBr(from)} → ${formatDateBr(to)}`;
-    const reportHtml = buildReportHTML(list, periodLabel);
-    const w = window.open('','_blank');
-    w.document.write(`<html><head><meta charset="utf-8"><title>Relatório</title>
-      <style>body{font-family:Arial;padding:18px} table{width:100%;border-collapse:collapse} th,td{border:1px solid #ddd;padding:8px}</style>
-      </head><body>${reportHtml}</body></html>`);
-    w.document.close();
-    setTimeout(()=> w.print(), 500);
-  });
-}
-
-/* end of file */
