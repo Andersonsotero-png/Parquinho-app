@@ -1,4 +1,4 @@
-:root{
+root{
   --white:#FFFFFF;
   --orange-strong:#FF6A00;
   --teal-light:#00B3AA;
@@ -44,33 +44,3 @@ button.secondary{background:var(--teal-light)}
 .badge.yellow{background:var(--yellow);color:#333}
 #btnScanNow{background:#0066cc;color:#fff}
 @media(min-width:900px){main{padding:24px}nav{gap:12px}}
-
-/* print-specific */
-@media print {
-  body * { visibility: hidden; }
-  #relatorioPrint, #relatorioPrint * { visibility: visible; }
-  #relatorioPrint { position: absolute; left: 0; top: 0; width: 100%; }
-}
-
-/* watermark for report preview and print */
-.report-wrapper{
-  position: relative;
-  padding: 18px;
-  min-height: 200px;
-}
-.report-watermark{
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%,-50%);
-  opacity: 0.08;
-  pointer-events: none;
-  width: 60%;
-  max-width: 500px;
-}
-.report-header{display:flex;align-items:center;gap:12px}
-.report-header img{width:80px;height:auto}
-.report-title{font-size:1.1rem;font-weight:700}
-.report-meta{margin-top:6px;color:var(--muted)}
-.report-table{width:100%;border-collapse:collapse;margin-top:12px}
-.report-table th, .report-table td{border:1px solid #ddd;padding:8px;text-align:left;font-size:13px}
