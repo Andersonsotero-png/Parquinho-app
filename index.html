@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Parquinho App - Terra do Sol</title>
+  <title>Parquinho App</title>
 
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="style.css" />
 
   <!-- QRCode + jsQR -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
@@ -15,8 +15,8 @@
 <body>
   <header>
     <div class="brand">
-      <img alt="logo" id="appLogo" src="assets/img/logo-terra-do-sol.png" />
-      <h1 id="appTitle">Parquinho App - Terra do Sol</h1>
+      <img alt="logo" id="appLogo" src="icon-192.png" />
+      <h1 id="appTitle">Parquinho App</h1>
     </div>
     <nav>
       <button data-tab="cadastro" class="active">Cadastro</button>
@@ -178,33 +178,11 @@
     <!-- IMPRESSÃO -->
     <section id="impressao" class="tab">
       <h2>Impressão</h2>
-
-      <div class="card">
-        <div class="row">
-          <label>Filtro rápido:
-            <select id="quickFilter">
-              <option value="hoje">Hoje</option>
-              <option value="ontem">Ontem</option>
-              <option value="ult7">Últimos 7 dias</option>
-              <option value="mesAtual">Mês atual</option>
-              <option value="intervalo">Intervalo...</option>
-            </select>
-          </label>
-          <label>Data inicial:
-            <input type="date" id="filterFrom" />
-          </label>
-          <label>Data final:
-            <input type="date" id="filterTo" />
-          </label>
-          <button id="btnFiltrar">Filtrar</button>
-          <button id="btnImprimirFiltro">Imprimir Lista de Cadastros</button>
-        </div>
-      </div>
-
-      <div id="relatorioPreview" class="card"></div>
+      <button id="btnImprimir">Imprimir Lista de Cadastros</button>
+      <div id="conteudoImpressao" hidden></div>
     </section>
   </main>
 
-  <script src="js/script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
